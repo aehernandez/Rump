@@ -1,0 +1,6 @@
+[package]
+name = "Rump"
+version = "0.1.0"
+authors = ["aehernandez <alainh@seas.upenn.edu>"]
+
+[dependencies]
