@@ -1,6 +1,5 @@
 extern crate rustc_serialize;
 extern crate websocket;
-extern crate mopa;
 
 use websocket::header::{WebSocketProtocol};
 use websocket::client::request::Url;
@@ -111,16 +110,16 @@ pub struct Transport<R: Read, W: Write> {
     serializer: Serializer,
 }
 
-struct EventMessage<K: Encodable> {
+struct EventMessage<A: Encodable, K: Encodable> {
     message_type: MessageType,
     id: u64,
     options: Options,
     topic: String,
-    args: Vec<Box<WampEncodable>>,
+    args: Vec<WampEncodable<A>>,
     kwargs: K,
 }
 
-impl<K: Encodable> Encodable for EventMessage <K> { 
+impl<A: Encodable, K: Encodable> Encodable for EventMessage <A, K> { 
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         // [self.message_type, self.id, self.options, self.topic, self.args, self.kwargs];
         s.emit_seq(6, |s| {
@@ -153,40 +152,34 @@ fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
     }
 }
 
+macro_rules! wamp_encodable {
+    ($($t:ident),+) => {
+        #[derive(Debug)]
+        enum WampEncodable<T> {
+             $($t($t),)* 
+             Generic(T),
+        }
+
+        impl<T: Encodable> Encodable for WampEncodable<T> {
+            fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+                match self {
+                    $(&WampEncodable::$t(ref value) => value.encode(s),)+
+                    &WampEncodable::Generic(ref value) => value.encode(s),
+                }
+            }
+        }
+
+        impl<T: Encodable> WampEncodable<T> { }
+        // Other clients can have this simplifier type alias
+        // type WampEncodable = WampEncodable<()>;
+    }
+}
+
+wamp_encodable!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32, f64, bool, char);
+
 pub struct Client {
     url: String,
     realm: String,
-}
-
-// Encodable cannot be made into a Trait Object so we brew our own version
-// mopa::Any and the macro implements the Any trait for our type
-trait WampEncodable : mopa::Any { }
-mopafy!(WampEncodable);
-impl<T: Any + Encodable> WampEncodable for T {}
-macro_rules! downcast_type_list {
-    ($this:ident, $s:ident, $e:block, [$($t:ty),+]) => {
-        {
-            if false {
-                unreachable!();
-            } 
-            $(else if $this.is::<$t>() {
-                $this.downcast_ref::<$t>().unwrap().encode($s)
-            })*
-            else {
-                $e
-            }
-        }
-    }
-}
-
-impl Encodable for Box<WampEncodable> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        // TODO: rustc_serialize would be great to return an error
-        // Need to add more types, a more flexible way to add more types!
-        downcast_type_list!(self, s, {panic!("unknown type found");},
-                            [usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, Box<str>,
-                             String, f32, f64, bool, char])
-    }
 }
 
 impl Client {
@@ -226,9 +219,9 @@ impl Client {
 
         // send a PUBLISH message
         // TODO: specify binary payload option
-        let mut args : Vec<Box<WampEncodable>> = Vec::new();
-        args.push(Box::new(5 as u32));
-        args.push(Box::new("hello!".to_string()));
+        let mut args : Vec<WampEncodable<()>> = Vec::new();
+        args.push(WampEncodable::u32(5 as u32));
+        args.push(WampEncodable::String("hello!".to_string()));
 
         let event_msg = EventMessage {
             message_type: MessageType::PUBLISH,
@@ -268,7 +261,11 @@ fn test_message_type_enum() {
 #[test]
 fn decode_event_message() {
     // TODO: Test the correct decoding of this
-    let msg = EventMessage {message_type: MessageType::HELLO, id: 42, options: Options {id: 1}, topic: "hello".to_string(), args: vec![Box::new(5 as u32), Box::new(7 as u32)], kwargs: -42};
+    let msg : EventMessage<(), i32> = EventMessage {message_type: MessageType::HELLO, 
+                            id: 42, options: Options {id: 1}, 
+                            topic: "hello".to_string(), 
+                            args: vec![WampEncodable::u32(5 as u32), WampEncodable::String("hello_world".to_string())], 
+                            kwargs: -42};
     let msg_string = json::encode(&msg);
     println!("{:?}", msg_string);
 }
