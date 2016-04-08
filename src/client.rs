@@ -4,6 +4,7 @@ extern crate websocket;
 use transport::{WampSender, WampConnector, WebSocket, WampEncodable, MessageType, SerializerType, Serializer,  new_event_id, EventMessage, EventJoin};
 use options::{Options, Details};
 use rustc_serialize::Encodable;
+use websocket::Message;
 
 use super::{WampResult};
 
@@ -48,8 +49,10 @@ impl Client {
 
     fn connect(&self) -> WampResult<Session<WebSocket>> {
         println!("starting...");
-
-        let transport = try!(WebSocket::connect(self.url.clone(), Serializer::new(SerializerType::JSON)));
+        let on_message = move |message: Message| (println!("{:?}", message));
+        let transport = try!(WebSocket::connect(self.url.clone(), 
+                                                Serializer::new(SerializerType::JSON),
+                                                on_message));
         let mut session = Session {sender: transport};
         try!(session.join(self.realm.clone()));
         Ok(session)
@@ -61,11 +64,6 @@ impl Client {
 //   unimplemented!(); 
 //}
 //
-
-/// Generates a new ID for an event
-fn new_id() -> u64 {
-    unimplemented!();
-}
 
 #[test]
 fn naive_connect() {

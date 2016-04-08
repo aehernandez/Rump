@@ -3,9 +3,10 @@ extern crate websocket;
 
 use websocket::header::{WebSocketProtocol};
 use websocket::client::request::Url;
-use websocket::{Message, Sender, Receiver};
-use websocket::stream::WebSocketStream;
-use websocket::sender::Sender as WebSocketSender;
+use websocket::{message, Message, Sender, Receiver};
+
+use std::{thread};
+use std::sync::mpsc;
 
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::json;
@@ -94,7 +95,7 @@ impl Serializer {
 }
 
 pub trait WampConnector {
-    fn connect(url: String, serializer: Serializer) -> WampResult<Self> where Self : Sized;
+    fn connect<F>(url: String, serializer: Serializer, on_message: F) -> WampResult<Self> where Self : Sized, F: Fn(Message) + Send;
 }
 
 pub trait WampSender : WampConnector {
@@ -102,12 +103,15 @@ pub trait WampSender : WampConnector {
 }
 
 pub struct WebSocket {
-    sender: WebSocketSender<WebSocketStream>,
+    sender: mpsc::Sender<Message>,
+    send_loop: thread::JoinHandle<()>,
+    recv_loop: thread::JoinHandle<()>,
     serializer: Serializer
 }
 
 impl WampConnector for WebSocket {
-    fn connect(url: String, serializer: Serializer) -> WampResult<Self> {
+    fn connect<F>(url: String, serializer: Serializer, on_message: F) -> WampResult<Self> 
+        where F:'static + Fn(Message) + Send {
         let url = try!(Url::parse(&*url).map_err(|e| WampError::InvalidURL));
         let mut request = try!(websocket::Client::connect(url));
         let protocol_name = "wamp.2.".to_string() + &*serializer.id;
@@ -118,13 +122,86 @@ impl WampConnector for WebSocket {
         try!(response.validate());
 
         let (mut sender, mut receiver) = response.begin().split();
-        Ok(WebSocket {sender: sender, serializer: serializer})
+
+        let (tx, rx) = mpsc::channel();
+
+        let send_loop = thread::spawn(move || {
+            loop {
+                // Send loop
+                let message: Message = match rx.recv() {
+                    Ok(m) => m,
+                    Err(e) => {
+                        println!("Send Loop: {:?}", e);
+                        return;
+                    }
+                };
+
+                // Send the message
+                match sender.send_message(&message) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("Send Loop: {:?}", e);
+                        let _ = sender.send_message(&Message::close());
+                        return;
+                    }
+                }
+            }
+        });
+
+        let receive_tx = tx.clone();
+        
+        let receive_loop = thread::spawn(move || {
+            // TODO: messages received are on a single thread,
+            // rust-weboscket may eventually may to a multi-threaded model, which
+            // may break this current implementation
+            // Receive loop
+            for message in receiver.incoming_messages() {
+                let message: Message = match message {
+                    Ok(m) => m,
+                    Err(e) => {
+                        println!("Receive Loop: {:?}", e);
+                        return;
+                    }
+                };
+
+                // Handle the message on the socket side
+                match message.opcode {
+                    message::Type::Close => {
+                        // TODO: Handle this on the session
+                        // Got a close message, so send a close message and return
+                        let _ = receive_tx.send(Message::close());
+                        return;
+                    }
+                    message::Type::Ping => match receive_tx.send(Message::pong(message.payload)) {
+                        // Send a pong in response
+                        Ok(()) => (),
+                        Err(e) => {
+                            println!("Receive Loop: {:?}", e);
+                            return;
+                        }
+                    },
+                    // Say what we received
+                    _ => println!("Receive Loop: {:?}", message),
+                }
+
+                // let the client handle the message
+                //on_message(message);
+            }
+
+            
+        });
+
+        Ok(WebSocket {sender: tx, 
+            send_loop: send_loop, 
+            recv_loop: receive_loop, 
+            serializer: serializer
+        })
     }
 }
 
 impl WampSender for WebSocket {
     fn send<T: Encodable>(&mut self, message: &T) -> WampResult<()> {
-        try!(self.sender.send_message((&self.serializer.encode(message))));
+        try!(self.sender.send(self.serializer.encode(message)));
         Ok(())
     }
 }
