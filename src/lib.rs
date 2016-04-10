@@ -36,10 +36,4 @@ impl From<WebSocketError> for WampError {
     }
 }
 
-impl <T> From<SendError<T>> for WampError {
-    fn from(err: SendError<T>) -> WampError {
-        WampError::InternalThreadError
-    }
-}
-
 pub type WampResult<T> = result::Result<T, WampError>;
