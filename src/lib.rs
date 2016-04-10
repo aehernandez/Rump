@@ -24,15 +24,15 @@ pub enum WampError {
 //    }
 //}
 
-impl From<WebSocketError> for WampError {
-    fn from(err: WebSocketError) -> WampError{
-        WampError::WebSocketError(err)
-    }
-}
-
 impl <T> From<SendError<T>> for WampError {
     fn from(err: SendError<T>) -> WampError {
         WampError::InternalThreadError
+    }
+}
+
+impl From<WebSocketError> for WampError {
+    fn from(err: WebSocketError) -> WampError{
+        WampError::WebSocketError(err)
     }
 }
 
