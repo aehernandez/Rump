@@ -7,3 +7,4 @@ authors = ["aehernandez <alainh@seas.upenn.edu>"]
 rustc-serialize = "0.3"
 websocket = "0.16.1"
 rand = "0.3"
+crossbeam = "0.2.5"
