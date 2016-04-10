@@ -1,74 +1,32 @@
 extern crate rustc_serialize;
 extern crate websocket;
 
+use std::{thread};
+use std::sync::mpsc;
+
 use websocket::header::{WebSocketProtocol};
 use websocket::client::request::Url;
 use websocket::{message, Message, Sender, Receiver};
 
-use std::{thread};
-use std::sync::mpsc;
-
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::json;
-
-use std::io::{self, Read, Write};
-use std::result;
-use options::{Details, Options};
 
 use super::WampResult;
 use super::WampError;
 
-//TODO: Give the following enums their write numeric value
-#[derive(Copy, Clone)]
-pub enum MessageType {
-    HELLO = 1,
-    WELCOME = 2,
-    ABORT = 3,
-    CHALLENGE,
-    AUTHENTICATE,
-    GOODBYE,
-    HEARTBEAT,
-    ERROR,
-    PUBLISH = 16,
-    PUBLISHED,
-    SUBSCRIBE,
-    SUBSCRIBED,
-    UNSUBSCRIBE,
-    UNSUBSCRIBED,
-    EVENT,
-    CALL,
-    CANCEL,
-    RESULT,
-    REGISTER,
-    REGISTERED,
-    UNREGISTER,
-    UNREGISTERED,
-    INVOCATION,
-    INTERRUPT,
-    YIELD
-} 
-
-impl Encodable for MessageType {
-    fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
-        s.emit_u32(*self as u32)
-    }
-
-}
-
+/// A type enumerating all the possible underlying socket implementations.
 pub enum SocketType {
     WEBSOCKET,
 }
 
+/// A type enumerating all possible serialization engines
 pub enum SerializerType {
-    /// Default should be JSON
+    /// JSON can be used for human-readable structured data
     JSON,
+//    /// [MsgPack](http://msgpack.org/index.html) can be used for binary data and structured data
     //MSGPACK,
 }
 
-pub fn new_event_id() -> u64 {
-    // TODO: Randomely generate this...
-    42
-}
 
 pub struct Serializer {
     id: String,
@@ -125,7 +83,7 @@ impl WampConnector for WebSocket {
 
         let (tx, rx) = mpsc::channel();
 
-        let send_loop = thread::spawn(move || {
+        thread::spawn(move || {
             loop {
                 // Send loop
                 let message: Message = match rx.recv() {
@@ -149,8 +107,7 @@ impl WampConnector for WebSocket {
         });
 
         let receive_tx = tx.clone();
-        
-        let receive_loop = thread::spawn(move || {
+        thread::spawn(move || {
             // TODO: messages received are on a single thread,
             // rust-weboscket may eventually may to a multi-threaded model, which
             // may break this current implementation
@@ -195,76 +152,3 @@ impl WampSender for WebSocket {
         Ok(())
     }
 }
-
-pub struct EventMessage<A: Encodable, K: Encodable> {
-    pub message_type: MessageType,
-    pub id: u64,
-    pub options: Options,
-    pub topic: String,
-    pub args: Vec<WampEncodable<A>>,
-    pub kwargs: K,
-}
-
-impl<A: Encodable, K: Encodable> Encodable for EventMessage <A, K> { 
-    fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
-        // [self.message_type, self.id, self.options, self.topic, self.args, self.kwargs];
-        s.emit_seq(6, |s| {
-            try!(s.emit_seq_elt(0, |s| self.message_type.encode(s)));
-            try!(s.emit_seq_elt(1, |s| self.id.encode(s)));
-            try!(s.emit_seq_elt(2, |s| self.options.encode(s)));
-            try!(s.emit_seq_elt(3, |s| self.topic.encode(s)));
-            try!(s.emit_seq_elt(4, |s| self.args.encode(s)));
-            try!(s.emit_seq_elt(5, |s| self.kwargs.encode(s)));
-            Ok(())
-        })
-    }
-}
-
-pub struct EventJoin {
-    pub message_type: MessageType,
-    pub realm: String,
-    pub details: Details,
-}
-
-
-impl Encodable for EventJoin {
-fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
-        // [self.message_type, self.id, self.options, self.topic, self.args, self.kwargs];
-        s.emit_seq(3, |s| {
-            try!(s.emit_seq_elt(0, |s| self.message_type.encode(s)));
-            try!(s.emit_seq_elt(1, |s| self.realm.encode(s)));
-            try!(s.emit_seq_elt(2, |s| self.details.encode(s)));
-            Ok(())
-        })
-    }
-}
-
-//TODO: better naming scheme for WampEncodable variants
-macro_rules! wamp_encodable {
-    ($($t:ident),+) => {
-        #[derive(Debug)]
-        pub enum WampEncodable<T> {
-             $($t($t),)* 
-             Generic(T),
-             None,
-        }
-
-        impl<T: Encodable> Encodable for WampEncodable<T> {
-            fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
-                match self {
-                    $(&WampEncodable::$t(ref value) => value.encode(s),)+
-                    &WampEncodable::Generic(ref value) => value.encode(s),
-                    &WampEncodable::None => s.emit_map(0, |s| Ok(())),
-                }
-            }
-        }
-
-        impl<T: Encodable> WampEncodable<T> { }
-        // Other clients can have this simplifier type alias
-        // type WampEncodable = WampEncodable<()>;
-    }
-}
-
-wamp_encodable!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32, f64, bool, char);
-
-

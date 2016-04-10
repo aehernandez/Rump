@@ -1,7 +1,8 @@
 extern crate rustc_serialize;
 extern crate websocket;
 
-use transport::{WampSender, WampConnector, WebSocket, WampEncodable, MessageType, SerializerType, Serializer,  new_event_id, EventMessage, EventJoin};
+use transport::{WampSender, WampConnector, WebSocket, SerializerType, Serializer};
+use message::{WampEncodable, MessageType, EventMessage, EventJoin, new_event_id};
 use options::{Options, Details};
 use rustc_serialize::Encodable;
 use websocket::Message;
@@ -59,20 +60,11 @@ impl Client {
     }
 }
 
-//// TODO: make custom Result Error enum that can wrap IO op errors
-//pub fn send<E: Encodable>(transport: Transport, msg: E) -> Result<(), String> {
-//   unimplemented!(); 
-//}
-//
-
 #[test]
-fn naive_connect() {
+fn client_naive_connect() {
     let mut session = Client::new("ws://localhost:8080/ws", "realm1").connect().unwrap();
-    session.publish::<(), WampEncodable<()>>("com.myapp.topic1", vec![WampEncodable::i32(5), WampEncodable::String("hello".to_string())], WampEncodable::None);
-
-}
-
-#[test]
-fn test_message_type_enum() {
-    assert!(MessageType::HELLO as u32 == 1);
+    session.publish::<(), WampEncodable<()>>("com.myapp.topic1", 
+                                             vec![WampEncodable::i32(5), 
+                                             WampEncodable::String("hello".to_string())],
+                                             WampEncodable::None);
 }

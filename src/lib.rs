@@ -6,6 +6,7 @@ extern crate rand;
 pub mod client;
 mod options;
 mod transport;
+mod message;
 
 use std::result;
 use websocket::result::WebSocketError;
