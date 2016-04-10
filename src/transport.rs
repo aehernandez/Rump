@@ -87,9 +87,10 @@ impl Serializer {
         }
     }
 
-    pub fn encode<T: Encodable>(&self, message: T) -> Message {
+    /// Serialize an encodable message into one that can be sent over a socket
+    pub fn encode<'a, T: Encodable>(&self, message: &T) -> Message<'a> {
         match self.mode {
-            SerializerType::JSON => Message::text(json::encode(&message).unwrap())
+            SerializerType::JSON => Message::text(json::encode(message).unwrap())
         }
     }
 }
@@ -99,17 +100,16 @@ pub trait WampConnector {
 }
 
 pub trait WampSender : WampConnector {
-    fn send<T: Encodable>(&mut self, message: &T) -> WampResult<()>;
+    fn send<T: Encodable>(&self, message: &T) -> WampResult<()>;
 }
 
 pub struct WebSocket {
-    sender: mpsc::Sender<Message>,
-    send_loop: thread::JoinHandle<()>,
-    recv_loop: thread::JoinHandle<()>,
+    sender: mpsc::Sender<Message<'static>>,
     serializer: Serializer
 }
 
 impl WampConnector for WebSocket {
+    //TODO: 'static lifetime for this function, is this valid?
     fn connect<F>(url: String, serializer: Serializer, on_message: F) -> WampResult<Self> 
         where F:'static + Fn(Message) + Send {
         let url = try!(Url::parse(&*url).map_err(|e| WampError::InvalidURL));
@@ -172,36 +172,26 @@ impl WampConnector for WebSocket {
                         let _ = receive_tx.send(Message::close());
                         return;
                     }
-                    message::Type::Ping => match receive_tx.send(Message::pong(message.payload)) {
-                        // Send a pong in response
-                        Ok(()) => (),
-                        Err(e) => {
-                            println!("Receive Loop: {:?}", e);
-                            return;
-                        }
-                    },
                     // Say what we received
                     _ => println!("Receive Loop: {:?}", message),
                 }
 
                 // let the client handle the message
-                //on_message(message);
+                on_message(message);
             }
-
-            
         });
 
-        Ok(WebSocket {sender: tx, 
-            send_loop: send_loop, 
-            recv_loop: receive_loop, 
+        Ok(WebSocket {
+            sender: tx, 
             serializer: serializer
         })
     }
 }
 
 impl WampSender for WebSocket {
-    fn send<T: Encodable>(&mut self, message: &T) -> WampResult<()> {
-        try!(self.sender.send(self.serializer.encode(message)));
+    fn send<T: Encodable>(&self, message: &T) -> WampResult<()> {
+        let event = self.serializer.encode(message);
+        try!(self.sender.send(event));
         Ok(())
     }
 }
