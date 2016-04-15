@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["SerializerType","A type enumerating all possible serialization engines"],["SocketType","A type enumerating all the possible underlying socket implementations."]],"struct":[["Serializer",""],["WebSocket",""]],"trait":[["WampConnector",""],["WampSender",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["MessageType","All possible WAMP event types"],["WampEncodable",""]],"fn":[["new_event_id","Generate a new id for a WAMP event"]],"struct":[["EventJoin",""],["EventMessage",""]]});
