@@ -14,12 +14,18 @@ pub struct Client {
     realm: String,
 }
 
+enum SessionState {
+    NotConnected,
+    Connected,
+}
+
 pub struct Session <S: WampSender>{
     sender: S,
+    state: SessionState, 
 }
 
 impl <S: WampSender> Session<S> {
-    pub fn join(&mut self, realm: String) -> WampResult<()> {
+    pub fn join(&self, realm: String) -> WampResult<()> {
         let join_msg = EventJoin { 
             message_type: MessageType::HELLO,
             realm: realm.clone(),
@@ -29,7 +35,7 @@ impl <S: WampSender> Session<S> {
        self.sender.send(&join_msg)
     }
 
-    pub fn publish<A, K>(&mut self, topic: &str, args: Vec<WampEncodable<A>>, kwargs: K) where A: Encodable, K: Encodable {
+    pub fn publish<A, K>(&self, topic: &str, args: Vec<WampEncodable<A>>, kwargs: K) where A: Encodable, K: Encodable {
         let msg = EventMessage {
             message_type: MessageType::PUBLISH,
             id: new_event_id(),
@@ -50,11 +56,15 @@ impl Client {
 
     fn connect(&self) -> WampResult<Session<WebSocket>> {
         println!("starting...");
-        let on_message = move |message: Message| (println!("{:?}", message));
+
+        let mut state = SessionState::NotConnected;
+        let on_message = |message: Message| {
+        };
+
         let transport = try!(WebSocket::connect(self.url.clone(), 
                                                 Serializer::new(SerializerType::JSON),
                                                 on_message));
-        let mut session = Session {sender: transport};
+        let mut session = Session {sender: transport, state: state};
         try!(session.join(self.realm.clone()));
         Ok(session)
     }
