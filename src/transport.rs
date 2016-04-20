@@ -27,7 +27,7 @@ pub enum SerializerType {
     //MSGPACK,
 }
 
-
+/// Describes the underling Serialization types used
 pub struct Serializer {
     id: String,
     /// true if the data being serialized is binary, false otherwise
@@ -53,14 +53,18 @@ impl Serializer {
     }
 }
 
+/// A WampConnector defines methods for a custom socket type to connect to another endpoint
+/// and to receive message on the socket
 pub trait WampConnector {
     fn connect<F>(url: String, serializer: Serializer, on_message: F) -> WampResult<Self> where Self : Sized, F: Fn(Message) + Send;
 }
 
+/// A WampSender defines methods for the custom socket type to send over the endpoint
 pub trait WampSender : WampConnector {
     fn send<T: Encodable>(&self, message: &T) -> WampResult<()>;
 }
 
+/// The default socket type used for establishing a WAMP session.
 pub struct WebSocket {
     sender: mpsc::Sender<Message<'static>>,
     serializer: Serializer
@@ -89,7 +93,7 @@ impl WampConnector for WebSocket {
                 let message: Message = match rx.recv() {
                     Ok(m) => m,
                     Err(e) => {
-                        println!("Send Loop: {:?}", e);
+                        println!("Error in Send Loop: {:?}", e);
                         return;
                     }
                 };
@@ -98,7 +102,7 @@ impl WampConnector for WebSocket {
                 match sender.send_message(&message) {
                     Ok(()) => (),
                     Err(e) => {
-                        println!("Send Loop: {:?}", e);
+                        println!("Error while sending {:?}", e);
                         let _ = sender.send_message(&Message::close());
                         return;
                     }
@@ -116,7 +120,7 @@ impl WampConnector for WebSocket {
                 let message: Message = match message {
                     Ok(m) => m,
                     Err(e) => {
-                        println!("Receive Loop: {:?}", e);
+                        println!("Error while receing message, Receive Loop: {:?}", e);
                         return;
                     }
                 };
@@ -130,9 +134,8 @@ impl WampConnector for WebSocket {
                         return;
                     }
                     // Say what we received
-                    _ => println!("Receive Loop: {:?}", message),
+                    _ => (),
                 }
-
                 // let the client handle the message
                 on_message(message);
             }

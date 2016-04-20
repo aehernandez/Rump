@@ -1,33 +1,35 @@
 use rustc_serialize::json;
 
-#[derive(RustcDecodable, RustcEncodable)]
+/// Represents different Options that can be sent wth a WAMP event 
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 pub struct Options {
     // TODO: // different options
     pub id: u32,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+/// Represents advanced features this WAMP Client implements
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 pub struct Details { 
     roles: Roles 
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct Caller {
     features: CallerFeatures 
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct CallerFeatures {
     caller_identification: bool,
     progressive_call_results: bool,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct Callee {
     features: CalleeFeatures
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct CalleeFeatures {
     caller_identification: bool,
     pattern_based_registration: bool,
@@ -36,31 +38,31 @@ struct CalleeFeatures {
     registration_revocation: bool,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct Publisher {
     features: PublisherFeatures,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct PublisherFeatures {
     publisher_identification: bool,
     subscriber_blackwhite_listing: bool,
     publisher_exclusion: bool
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct Subscriber {
     features: SubscriberFeatures,
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct SubscriberFeatures {
     publisher_identification: bool,
     pattern_based_subscription: bool,
     subscription_revocation: bool
 }
 
-#[derive(RustcDecodable, RustcEncodable)]
+#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 struct Roles {
     caller: Caller,
     callee: Callee,

@@ -5,6 +5,7 @@ except ImportError:
     import trollius as asyncio
 
 from os import environ
+from asyncio import sleep
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 
 
@@ -16,7 +17,7 @@ class Component(ApplicationSession):
 
     @asyncio.coroutine
     def onJoin(self, details):
-
+        counter = 0
         self.received = 0
 
         def on_event(*args, **kwargs):
