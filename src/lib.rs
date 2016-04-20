@@ -1,3 +1,5 @@
+//!  A [WAMP](http://wamp-proto.org/) Client built with pure Rust. 
+
 extern crate rustc_serialize;
 extern crate websocket;
 extern crate crossbeam;

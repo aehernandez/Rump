@@ -4,7 +4,7 @@ use rustc_serialize::{Encodable, Encoder};
 use options::{Options, Details};
 use std::result;
 
-/// All WAMP event and message types and their numeric counterparts
+/// All WAMP events and message types and their numeric counterparts
 #[derive(Copy, Clone, Debug)]
 pub enum MessageType {
     HELLO = 1,

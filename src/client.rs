@@ -17,14 +17,16 @@ use super::{WampResult};
 use std::thread::sleep;
 use std::time::Duration;
 
-/// Client is struct which has methods for creating a new WAMP Session.
+/// A Client defines methods and options for building a Session with a WAMP Router
 ///
 /// # Examples
 ///
 /// To obtain a Session from a client with default settings perform the following:
+///
 /// ```
 /// let session = Client::new(ADDR_OF_ROUTER, REALM_NAME).connect().unwrap();
 /// ```
+///
 pub struct Client {
     url: String,
     realm: String,
@@ -61,15 +63,17 @@ impl <S: WampSender> Session<S> {
     /// and/or a struct representings Key-Value pairs.
     ///
     ///  # Examples
+    ///
     ///  To send an empty publish event 
+    ///
     ///  ```
-    ///  session.publish::<(), WampEncodable<()>>("com.example.topic", Vec::new(),
-    ///  WampEncodable::None); 
+    ///  session.publish::<(), WampEncodable<()>>("com.example.topic", Vec::new(), WampEncodable::None); 
     ///  ```
     ///
     ///  To send the positions arguments (42, "foo") and key word arguments:
     ///  Note: Your custom type must have the
-    ///  (Encodable)[https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html] trait.
+    ///  [Encodable](https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html) trait.
+    ///
     /// ```
     /// #[derive(RustcEncodable)]
     /// struct CustomKwargs {
@@ -77,10 +81,9 @@ impl <S: WampSender> Session<S> {
     ///     key2: u32
     /// }
     ///
-    /// session.publish::<(), CustomKwargs>("com.example.topic,
-    /// vec![WampEncodable::i32(42), WampEncodable::String("foo".to_string())], 
-    /// CustomKwargs {key1: "hello".to_string(), key2: 19});
+    /// session.publish::<(), CustomKwargs>("com.example.topic", vec![WampEncodable::i32(42), WampEncodable::String("foo".to_string())], CustomKwargs {key1: "hello".to_string(), key2: 19});
     /// ```
+    ///
     pub fn publish<A, K>(&self, topic: &str, args: Vec<WampEncodable<A>>, kwargs: K) where A: Encodable, K: Encodable {
         let msg = EventPublish {
             message_type: MessageType::PUBLISH,
