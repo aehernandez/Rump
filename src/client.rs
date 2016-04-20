@@ -42,7 +42,7 @@ enum SessionState {
 pub struct Session <S: WampSender> {
     /// Outgoing socket connection to WAMP Router
     sender: S,
-    subscriptions: Arc<Mutex<(HashMap<String, u64>, HashMap<u64, Vec<Box<Fn(EventPublish<(), ()>) + Send>>>)>>,
+    //subscriptions: Arc<Mutex<(HashMap<String, u64>, HashMap<u64, Vec<Box<Fn(EventPublish<(), ()>) + Send>>>)>>,
     state: SessionState, 
 }
 
@@ -99,7 +99,7 @@ impl <S: WampSender> Session<S> {
 
     pub fn subscribe<F>(&self, topic: &str, callback: F) 
         where F: 'static + Send + Fn(EventPublish<(), ()>) {
-            let mut subscriptions = self.subscriptions.lock().unwrap();
+            //let mut subscriptions = self.subscriptions.lock().unwrap();
             let callback = Box::new(callback);
             let topic = topic.to_string();
             let msg = EventSubscribe {
@@ -136,8 +136,11 @@ impl Client {
                                                 Serializer::new(SerializerType::JSON),
                                                 on_message));
 
-        let mut session = Session {sender: transport, state: state, 
-            subscriptions: unimplemented!()};
+        let mut session = Session {
+            sender: transport, 
+            state: state, 
+        //    subscriptions: unimplemented!(),
+        };
         try!(session.join(self.realm.clone()));
         Ok(session)
     }

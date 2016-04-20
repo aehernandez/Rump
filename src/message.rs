@@ -1,8 +1,11 @@
 extern crate rustc_serialize;
+extern crate rand;
 
+use rand::Rng;
 use rustc_serialize::{Encodable, Encoder};
 use options::{Options, Details};
 use std::result;
+use std::any::Any;
 
 /// All WAMP events and message types and their numeric counterparts
 #[derive(Copy, Clone, Debug)]
@@ -31,8 +34,66 @@ pub enum MessageType {
     UNREGISTERED,
     INVOCATION,
     INTERRUPT,
-    YIELD
+    YIELD,
+    /// The message type value was not found, usually this means a protocol violation occured.
+    NONE = -1
 } 
+
+impl From<u32> for MessageType {
+    fn from(value: u32) -> Self {
+        match value {
+            1 => MessageType::HELLO,
+            2 => MessageType::WELCOME,
+            3 => MessageType::ABORT,
+            4 => MessageType:: CHALLENGE,
+            5 => MessageType::AUTHENTICATE,
+            6 => MessageType::GOODBYE,
+            7 => MessageType::HEARTBEAT,
+            8 => MessageType::ERROR,
+            16 => MessageType::PUBLISH,
+            17 => MessageType::PUBLISHED,
+            32 => MessageType::SUBSCRIBE,
+            33 => MessageType::SUBSCRIBED,
+            34 => MessageType::UNSUBSCRIBE,
+            35 => MessageType::UNSUBSCRIBED,
+            36 => MessageType::EVENT,
+            48 => MessageType::CALL,
+            49 => MessageType::CANCEL,
+            50 => MessageType::RESULT,
+            64 => MessageType::REGISTER,
+            65 => MessageType::REGISTERED,
+            66 => MessageType::UNREGISTER,
+            67 => MessageType::UNREGISTERED,
+            68 => MessageType::INVOCATION,
+            69 => MessageType::INTERRUPT,
+            70 => MessageType::YIELD,
+            _ => MessageType::NONE,
+        }
+    }
+}
+
+pub enum WampEvent {
+    Subscribed {
+        message_type: MessageType,
+        event_id: u64,
+        topic_id: u64,
+    },
+    Subscription {
+        message_type: MessageType,
+        topic_id: u64,
+        Options: Options,
+        args: Vec<Box<Any>>,
+        kwargs: Option<Box<Any>>,
+    }
+}
+
+pub fn decode_event(raw: &str) -> WampEvent {
+    unimplemented!();
+}
+pub fn get_event_type(raw: &str) -> MessageType {
+    unimplemented!();
+}
+
 
 impl Encodable for MessageType {
     fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
@@ -43,8 +104,9 @@ impl Encodable for MessageType {
 /// Generates a new event_id to track messages sent to and from the WAMP Router
 pub fn new_event_id() -> u64 {
     // TODO: Randomely generate this...
-    42
+    rand::thread_rng().next_u32() as u64
 }
+
 
 //TODO: Currently every message type has its own struct,
 // perhaps there is a better way to abstract this with an enum
@@ -84,12 +146,6 @@ pub struct EventSubscribe {
     pub topic: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct EventSubscribed {
-    pub message_type: MessageType,
-    pub id: u64,
-    pub topic: u64,
-}
 
 impl Encodable for EventSubscribe { 
     fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
@@ -102,6 +158,13 @@ impl Encodable for EventSubscribe {
             Ok(())
         })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct EventSubscribed {
+    pub message_type: MessageType,
+    pub id: u64,
+    pub topic: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -160,4 +223,5 @@ wamp_encodable!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32,
 fn message_enum_value() {
     assert!(MessageType::HELLO as u32 == 1);
     assert!(MessageType::SUBSCRIBE as u32 == 32);
+    assert!((1 as u32) as MessageType == MessageType::HELLO);
 }
