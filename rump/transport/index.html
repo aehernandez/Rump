@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-380' class='srclink' href='../../src/rump/transport.rs.html#1-154' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-532' class='srclink' href='../../src/rump/transport.rs.html#1-157' title='goto source code'>[src]</a></span></h1>
 <h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
 <table><tr><td><code>extern crate rustc_serialize;</code></td></tr><tr><td><code>extern crate websocket;</code></td></tr><tr><td><code>use std::prelude::<a class='mod' href='https://doc.rust-lang.org/nightly/std/prelude/v1/index.html' title='std::prelude::v1'>v1</a>::*;</code></td></tr><tr><td><code>use std::{<a class='mod' href='https://doc.rust-lang.org/nightly/std/thread/index.html' title='std::thread'>thread</a>};</code></td></tr><tr><td><code>use std::sync::<a class='mod' href='https://doc.rust-lang.org/nightly/std/sync/mpsc/index.html' title='std::sync::mpsc'>mpsc</a>;</code></td></tr><tr><td><code>use websocket::header::{WebSocketProtocol};</code></td></tr><tr><td><code>use websocket::client::request::Url;</code></td></tr><tr><td><code>use websocket::{message, Message, Sender, Receiver};</code></td></tr><tr><td><code>use rustc_serialize::{<a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encoder.html' title='rustc_serialize::serialize::Encoder'>Encoder</a>};</code></td></tr><tr><td><code>use rustc_serialize::<a class='mod' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html' title='rustc_serialize::json'>json</a>;</code></td></tr><tr><td><code>use super::<a class='type' href='../../rump/type.WampResult.html' title='rump::WampResult'>WampResult</a>;</code></td></tr><tr><td><code>use super::<a class='enum' href='../../rump/enum.WampError.html' title='rump::WampError'>WampError</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
@@ -54,7 +54,8 @@
                         <td><a class='struct' href='struct.Serializer.html'
                                title='rump::transport::Serializer'>Serializer</a></td>
                         <td class='docblock short'>
-                             
+                             <p>Describes the underling Serialization types used</p>
+
                         </td>
                     </tr>
                 
@@ -62,7 +63,8 @@
                         <td><a class='struct' href='struct.WebSocket.html'
                                title='rump::transport::WebSocket'>WebSocket</a></td>
                         <td class='docblock short'>
-                             
+                             <p>The default socket type used for establishing a WAMP session.</p>
+
                         </td>
                     </tr>
                 </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
@@ -90,7 +92,9 @@
                         <td><a class='trait' href='trait.WampConnector.html'
                                title='rump::transport::WampConnector'>WampConnector</a></td>
                         <td class='docblock short'>
-                             
+                             <p>A WampConnector defines methods for a custom socket type to connect to another endpoint
+and to receive message on the socket</p>
+
                         </td>
                     </tr>
                 
@@ -98,7 +102,8 @@
                         <td><a class='trait' href='trait.WampSender.html'
                                title='rump::transport::WampSender'>WampSender</a></td>
                         <td class='docblock short'>
-                             
+                             <p>A WampSender defines methods for the custom socket type to send over the endpoint</p>
+
                         </td>
                     </tr>
                 </table></section>

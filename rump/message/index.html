@@ -46,9 +46,9 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-477' class='srclink' href='../../src/rump/message.rs.html#1-133' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-627' class='srclink' href='../../src/rump/message.rs.html#1-163' title='goto source code'>[src]</a></span></h1>
 <h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
-<table><tr><td><code>use std::prelude::<a class='mod' href='https://doc.rust-lang.org/nightly/std/prelude/v1/index.html' title='std::prelude::v1'>v1</a>::*;</code></td></tr><tr><td><code>use std::<a class='mod' href='https://doc.rust-lang.org/nightly/core/result/index.html' title='core::result'>result</a>;</code></td></tr><tr><td><code>use rustc_serialize::{<a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encoder.html' title='rustc_serialize::serialize::Encoder'>Encoder</a>};</code></td></tr><tr><td><code>use options::{<a class='struct' href='../../rump/options/struct.Details.html' title='rump::options::Details'>Details</a>, <a class='struct' href='../../rump/options/struct.Options.html' title='rump::options::Options'>Options</a>};</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table><tr><td><code>extern crate rustc_serialize;</code></td></tr><tr><td><code>use std::prelude::<a class='mod' href='https://doc.rust-lang.org/nightly/std/prelude/v1/index.html' title='std::prelude::v1'>v1</a>::*;</code></td></tr><tr><td><code>use rustc_serialize::{<a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encoder.html' title='rustc_serialize::serialize::Encoder'>Encoder</a>};</code></td></tr><tr><td><code>use options::{<a class='struct' href='../../rump/options/struct.Options.html' title='rump::options::Options'>Options</a>, <a class='struct' href='../../rump/options/struct.Details.html' title='rump::options::Details'>Details</a>};</code></td></tr><tr><td><code>use std::<a class='mod' href='https://doc.rust-lang.org/nightly/core/result/index.html' title='core::result'>result</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                     <tr class=' module-item'>
                         <td><a class='struct' href='struct.EventJoin.html'
@@ -59,8 +59,24 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='struct' href='struct.EventMessage.html'
-                               title='rump::message::EventMessage'>EventMessage</a></td>
+                        <td><a class='struct' href='struct.EventPublish.html'
+                               title='rump::message::EventPublish'>EventPublish</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.EventSubscribe.html'
+                               title='rump::message::EventSubscribe'>EventSubscribe</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.EventSubscribed.html'
+                               title='rump::message::EventSubscribed'>EventSubscribed</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -71,7 +87,7 @@
                         <td><a class='enum' href='enum.MessageType.html'
                                title='rump::message::MessageType'>MessageType</a></td>
                         <td class='docblock short'>
-                             <p>All possible WAMP event types</p>
+                             <p>All WAMP event and message types and their numeric counterparts</p>
 
                         </td>
                     </tr>
@@ -80,7 +96,9 @@
                         <td><a class='enum' href='enum.WampEncodable.html'
                                title='rump::message::WampEncodable'>WampEncodable</a></td>
                         <td class='docblock short'>
-                             
+                             <p>All types that can be sent to/from a WAMP Router
+Used to publish non-hetereogenous positional arguments</p>
+
                         </td>
                     </tr>
                 </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
@@ -89,7 +107,7 @@
                         <td><a class='fn' href='fn.new_event_id.html'
                                title='rump::message::new_event_id'>new_event_id</a></td>
                         <td class='docblock short'>
-                             <p>Generate a new id for a WAMP event</p>
+                             <p>Generates a new event_id to track messages sent to and from the WAMP Router</p>
 
                         </td>
                     </tr>
