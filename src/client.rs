@@ -1,8 +1,8 @@
 extern crate rustc_serialize;
 extern crate websocket;
 
-use transport::{WampSender, WampConnector, WebSocket, SerializerType, Serializer};
-use message::{WampEncodable, MessageType, EventPublish, EventJoin, EventSubscribe, new_event_id};
+use transport::{WampSender, WampConnector, WebSocket, Serializer};
+use message::{WampType, WampEvent, MessageType, EventPublish, EventJoin, Payload, EventSubscribe, new_event_id};
 use options::{Options, Details};
 
 use rustc_serialize::{Encodable, Decodable};
@@ -16,6 +16,9 @@ use super::{WampResult};
 
 use std::thread::sleep;
 use std::time::Duration;
+use std::str::from_utf8;
+
+use std::borrow::Borrow;
 
 /// A Client defines methods and options for building a Session with a WAMP Router
 ///
@@ -42,7 +45,11 @@ enum SessionState {
 pub struct Session <S: WampSender> {
     /// Outgoing socket connection to WAMP Router
     sender: S,
-    //subscriptions: Arc<Mutex<(HashMap<String, u64>, HashMap<u64, Vec<Box<Fn(EventPublish<(), ()>) + Send>>>)>>,
+    /// Map topic URIs to the event_id that generated them and corresponding callback
+    pending_subscriptions: Arc<Mutex<HashMap<u64, (String, Box<Fn(&Payload) + Send>)>>>,
+    /// Two maps: Firstly a mapping from topic IDs to topic URIs
+    /// Secondly, topic URIs to their callbacks 
+    subscriptions: Arc<Mutex<(HashMap<u64, String>, HashMap<String, Vec<Box<Fn(&Payload) + Send>>>)>>,
     state: SessionState, 
 }
 
@@ -84,12 +91,12 @@ impl <S: WampSender> Session<S> {
     /// session.publish::<(), CustomKwargs>("com.example.topic", vec![WampEncodable::i32(42), WampEncodable::String("foo".to_string())], CustomKwargs {key1: "hello".to_string(), key2: 19});
     /// ```
     ///
-    pub fn publish<A, K>(&self, topic: &str, args: Vec<WampEncodable<A>>, kwargs: K) where A: Encodable, K: Encodable {
+    pub fn publish(&self, topic: &str, args: Vec<WampType>, kwargs: WampType) {
         let msg = EventPublish {
             message_type: MessageType::PUBLISH,
             id: new_event_id(),
             topic: topic.to_string(),
-            options: Options {id: 1}, // TODO: Make this an empty field, or with actual options
+            options: Options::Empty, // TODO: Make this an empty field, or with actual options
             args: args,
             kwargs: kwargs,
         };
@@ -98,18 +105,16 @@ impl <S: WampSender> Session<S> {
     }
 
     pub fn subscribe<F>(&self, topic: &str, callback: F) 
-        where F: 'static + Send + Fn(EventPublish<(), ()>) {
+        where F: 'static + Send + Fn(&Payload) {
             //let mut subscriptions = self.subscriptions.lock().unwrap();
             let callback = Box::new(callback);
             let topic = topic.to_string();
-            let msg = EventSubscribe {
-                message_type: MessageType::SUBSCRIBE,
-                id: new_event_id(),
-                topic: topic.clone(),
-                options: Options{id: 1},
-            };
+            let msg = EventSubscribe::new(topic.clone()); 
+            {
+                let mut pending = self.pending_subscriptions.lock().unwrap();
+                pending.insert(msg.get_id(), (topic.clone(), callback));
+            }
             self.sender.send(&msg);
-            //subscriptions.entry(topic.clone()).or_insert(Vec::new()).push(callback); 
     }
 }
 
@@ -122,24 +127,56 @@ impl Client {
         println!("starting...");
 
         let mut state = SessionState::NotConnected;
-        // let mut subscriptions = Arc::new(Mutex::new(HashMap::new()));
-        // let known_subscriptions = subscriptions.clone();
-        let on_message = |message: Message| {
+        let serializer = Serializer::json();
+        let msg_serializer = serializer.clone();
+        //let mut subscriptions = Arc::new(Mutex::new(HashMap::new()));
+        let pending_subscriptions =  Arc::new(Mutex::new(HashMap::new())); 
+        let subscriptions = Arc::new(Mutex::new((HashMap::new(), HashMap::new())));
+
+        let msg_pending_subcriptions = pending_subscriptions.clone();
+        let msg_subscriptions = subscriptions.clone();
+
+        let on_message = move |message: Message| {
             if let websocket::message::Type::Text = message.opcode {
-                let payload = String::from_utf8(message.payload.into_owned());
+                //TODO: Handle unwrap more gracefully
+                let payload = from_utf8(message.payload.borrow()).unwrap();
                 println!("Got message {:?}", payload);
+                if let Ok(event) = msg_serializer.decode::<WampEvent>(payload)  {
+                    match event {
+                        WampEvent::Subscribed{event_id, topic_id, .. } => { 
+                            let (topic_name, callback) : (String, _) = {
+                                let mut pending = msg_pending_subcriptions.lock().unwrap();
+                                pending.remove(&event_id).expect("Protocol Violation: Got a SUBSCRIBED response, but no subscription was pending from the user.") 
+                            };
+
+                            let (ref mut topic_map, ref mut callback_map) = *msg_subscriptions.lock().unwrap();
+                            topic_map.insert(topic_id, topic_name.clone());
+                            let mut callbacks : &mut Vec<Box<Fn(&Payload) + Send>> = callback_map.entry(topic_name).or_insert(Vec::new());
+                            callbacks.push(callback);
+                        },
+                        WampEvent::Event {topic_id, ..} => {
+                            let cb_payload =  Payload::from_str(payload).unwrap();
+                            let (ref topic_map, ref callback_map) = *msg_subscriptions.lock().unwrap();
+                           let topic_name = topic_map.get(&topic_id).unwrap();
+                           for callback in callback_map.get(topic_name).unwrap() {
+                               callback(&cb_payload);
+                           }
+                        },
+                    }
+                }
 
             }
         };
 
         let transport = try!(WebSocket::connect(self.url.clone(), 
-                                                Serializer::new(SerializerType::JSON),
+                                                serializer,
                                                 on_message));
 
         let mut session = Session {
             sender: transport, 
             state: state, 
-        //    subscriptions: unimplemented!(),
+            pending_subscriptions: pending_subscriptions,
+            subscriptions: subscriptions,
         };
         try!(session.join(self.realm.clone()));
         Ok(session)
@@ -149,13 +186,23 @@ impl Client {
 #[test]
 fn client_naive_connect() {
     let mut session = Client::new("ws://localhost:8080/ws", "realm1").connect().unwrap();
-    session.publish::<(), WampEncodable<()>>("com.myapp.topic1", 
-                                             vec![WampEncodable::i32(5), 
-                                             WampEncodable::String("hello".to_string())],
-                                             WampEncodable::None);
-    sleep(Duration::new(2, 0));
-    println!("subscribing...");
-    session.subscribe("com.myapp.topic1", |m| println!("{:?}", m));
+    //session.publish("com.myapp.topic1", vec![WampType::i32(5), 
+    //                                         WampType::String("hello".to_string())],
+    //                                         WampType::None);
+    sleep(Duration::new(1, 0));
+
+    #[derive(Debug, RustcDecodable)]
+    struct TestStruct {
+        counter: i64,
+        word: String,
+    }
+
+    session.subscribe("com.myapp.topic1", |payload| {
+        let (counter, from) : (i64, String) = payload.decode_args().unwrap();   
+        let test_struct : TestStruct = payload.decode_kwargs().unwrap();
+        println!("got count {:?} from {:?}", counter, from);
+        println!("and some kwargs {:?}", test_struct);
+    });
 
     loop {}
 }

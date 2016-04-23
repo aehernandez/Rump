@@ -8,7 +8,7 @@ use websocket::header::{WebSocketProtocol};
 use websocket::client::request::Url;
 use websocket::{message, Message, Sender, Receiver};
 
-use rustc_serialize::{Encodable, Encoder};
+use rustc_serialize::{Encodable, Encoder, Decodable};
 use rustc_serialize::json;
 
 use super::WampResult;
@@ -20,6 +20,7 @@ pub enum SocketType {
 }
 
 /// A type enumerating all possible serialization engines
+#[derive(Debug, Copy, Clone)]
 pub enum SerializerType {
     /// JSON can be used for human-readable structured data
     JSON,
@@ -28,6 +29,7 @@ pub enum SerializerType {
 }
 
 /// Describes the underling Serialization types used
+#[derive(Debug, Clone)]
 pub struct Serializer {
     id: String,
     /// true if the data being serialized is binary, false otherwise
@@ -35,8 +37,13 @@ pub struct Serializer {
     /// an enum referring to the type of serilizer
     mode: SerializerType,
 }
+unsafe impl Send for Serializer {}
 
 impl Serializer {
+    pub fn json() -> Self {
+        Self::new(SerializerType::JSON)
+    }
+
     pub fn new(mode: SerializerType) -> Self {
         match mode {
             SerializerType::JSON => 
@@ -49,6 +56,13 @@ impl Serializer {
     pub fn encode<'a, T: Encodable>(&self, message: &T) -> Message<'a> {
         match self.mode {
             SerializerType::JSON => Message::text(json::encode(message).unwrap())
+        }
+    }
+
+    pub fn decode<T: Decodable>(&self, message: &str) -> WampResult<T> {
+        match self.mode {
+            // TODO: Handle this unwrap gracefully...
+            SerializerType::JSON => json::decode(message).map_err(|e| WampError::DecodeError(e))
         }
     }
 }

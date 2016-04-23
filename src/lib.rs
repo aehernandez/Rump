@@ -13,12 +13,15 @@ mod message;
 use std::result;
 use websocket::result::WebSocketError;
 use std::sync::mpsc::SendError;
+use rustc_serialize::json;
 
 #[derive(Debug)]
 pub enum WampError {
     InvalidURL,
     WebSocketError(WebSocketError),
     InternalThreadError,
+    ProtocolError,
+    DecodeError (json::DecoderError),
 }
 
 //impl From<ParseError> for WampError {

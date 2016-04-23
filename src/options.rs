@@ -1,10 +1,19 @@
-use rustc_serialize::json;
+use rustc_serialize::{json, Encodable, Encoder};
+use message::WampType;
 
 /// Represents different Options that can be sent wth a WAMP event 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
-pub struct Options {
+#[derive(RustcDecodable, Debug, Clone, PartialEq)]
+pub enum Options {
     // TODO: // different options
-    pub id: u32,
+    Empty,
+}
+
+impl Encodable for Options {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        match self {
+           &Options::Empty => s.emit_map(0, |s| Ok(())) 
+        }
+    }
 }
 
 /// Represents advanced features this WAMP Client implements

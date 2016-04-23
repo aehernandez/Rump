@@ -2,13 +2,19 @@ extern crate rustc_serialize;
 extern crate rand;
 
 use rand::Rng;
-use rustc_serialize::{Encodable, Encoder};
+use rustc_serialize::{json, Encodable, Encoder, Decodable, Decoder};
+
 use options::{Options, Details};
+use transport::Serializer;
 use std::result;
+use std::collections::HashMap;
 use std::any::Any;
+use WampError;
+use WampResult;
+
 
 /// All WAMP events and message types and their numeric counterparts
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum MessageType {
     HELLO = 1,
     WELCOME,
@@ -36,7 +42,7 @@ pub enum MessageType {
     INTERRUPT,
     YIELD,
     /// The message type value was not found, usually this means a protocol violation occured.
-    NONE = -1
+    NONE = 0 
 } 
 
 impl From<u32> for MessageType {
@@ -72,26 +78,163 @@ impl From<u32> for MessageType {
     }
 }
 
+//#[derive(Debug)]
 pub enum WampEvent {
     Subscribed {
         message_type: MessageType,
         event_id: u64,
         topic_id: u64,
     },
-    Subscription {
+    Event {
         message_type: MessageType,
         topic_id: u64,
-        Options: Options,
-        args: Vec<Box<Any>>,
-        kwargs: Option<Box<Any>>,
+        event_id: u64,
+        options: Options,
+        has_kwargs: bool,
+    },
+}
+
+impl Decodable for WampEvent {
+    fn decode<D: Decoder>(d: &mut D) -> Result<WampEvent, D::Error> {
+        d.read_seq(|d, len| {
+            if len > 0 {
+                let message_type = try!(d.read_seq_elt(0, |d| d.read_u32()));
+                let message_type = MessageType::from(message_type);
+                match message_type {
+                    MessageType::SUBSCRIBED => {
+                        if len != 3 {
+                            Err(d.error("unexpected len != 3 for SUBSCRIBED message"))
+                        } else {
+                            let event_id = try!(d.read_seq_elt(1, |d| d.read_u64()));
+                            let topic_id = try!(d.read_seq_elt(2, |d| d.read_u64()));
+                            Ok(WampEvent::Subscribed {
+                                message_type: message_type,
+                                event_id: event_id,
+                                topic_id: topic_id,
+                            })
+                        }
+                    },
+
+                    MessageType::EVENT => {
+                        if len != 5 && len != 6 {
+                            Err(d.error("unexpected len != {5, 6} for EVENT message"))
+                        } else {
+                            let topic_id = try!(d.read_seq_elt(1, |d| d.read_u64()));
+                            let event_id = try!(d.read_seq_elt(2, |d| d.read_u64()));
+                            //TODO: Actually fulfill these options!
+                            let options = Options::Empty;
+                            let has_kwargs = len == 6;
+
+                            // Read positional arguments
+                            //let args = try!(d.read_seq_elt(4, |d| d.read_seq(|d, len| {
+                            //   let mut v : Vec<WampType> = Vec::with_capacity(len);
+                            //   for i in 0..len {
+                            //    v.push(try!(d.read_seq_elt(i, |d| Decodable::decode(d))));
+                            //   }
+                            //   Ok(v)
+                            //})));
+                            
+                           Ok(WampEvent::Event {
+                               message_type: message_type, 
+                               topic_id: topic_id,
+                               event_id: event_id,
+                               options: options,
+                               has_kwargs: has_kwargs, 
+                           })
+                        }
+                    }
+                    _ => Err(d.error(&*format!("protocol violation: no message type {} exists", 
+                                               message_type as u32)))
+                }
+            } else {
+                // bad things happen
+                Err(d.error("empty message received"))
+            }
+        })
     }
 }
 
-pub fn decode_event(raw: &str) -> WampEvent {
-    unimplemented!();
+#[derive(Debug)]
+pub struct Payload {
+    args: String,
+    kwargs: Option<String>,
+    serializer: Serializer
 }
-pub fn get_event_type(raw: &str) -> MessageType {
-    unimplemented!();
+
+impl Payload {
+    fn capture_braces(raw: &str, braces: (char, char)) -> Option<(usize, usize)> {
+        let left_brace = braces.0;
+        let right_brace = braces.1;
+        assert!(left_brace != right_brace);
+
+        let mut first_index : usize  = 0;
+        let mut final_index : usize  = 0;
+        let mut found_initial_brace = false;
+        let mut count = -1;
+
+        for (i, c) in raw.char_indices() {
+
+            if c == left_brace { 
+                count = count + 1;
+                if !found_initial_brace {
+                    first_index = i;
+                    found_initial_brace = true;
+                }
+            } else if c == right_brace {
+                if found_initial_brace {
+                    if count == 0 {
+                        final_index = i; 
+                        break;
+                    } else {
+                        count = count - 1;
+                    }
+                }
+            }
+        }
+
+        if count == 0 && found_initial_brace && final_index > first_index {
+            Some((first_index, final_index))
+        } else {
+            None
+        }
+    }
+
+    /// Extract args and kwargs from a Wamp Message that is known to have a payload
+    pub fn from_str(raw: &str) -> WampResult<Payload> {
+        if let Some((_, end)) = Self::capture_braces(raw, ('{', '}')) {
+            let (_, next) = raw.split_at(end + 1);
+            if let Some((args_l, args_r)) = Self::capture_braces(next, ('[', ']')) {
+                let args = &next[args_l .. args_r + 1];
+                let (_, kw_next) = next.split_at(args_r);
+                let kwargs = Self::capture_braces(kw_next, ('{', '}'))
+                    .map(|(kwargs_l, kwargs_r)| kw_next[kwargs_l .. kwargs_r + 1].to_string());
+
+                return Ok(Payload {
+                    args: args.to_string(),
+                    kwargs: kwargs,
+                    serializer: Serializer::json()
+                });
+            }
+        } 
+
+        Err(WampError::ProtocolError)
+    }
+
+    pub fn decode_args<T: Decodable>(&self) -> WampResult<T> {
+        self.serializer.decode(&*self.args)
+    }
+
+    pub fn decode_kwargs<T: Decodable>(&self) -> WampResult<T> {
+        self.serializer.decode(&**self.kwargs.as_ref().unwrap_or(&String::from(""))) 
+    }
+
+    pub fn has_args(&self) -> bool {
+        self.args.len() > 0
+    }
+
+    pub fn has_kwargs(&self) -> bool {
+        self.kwargs.is_some()
+    }
 }
 
 
@@ -114,16 +257,16 @@ pub fn new_event_id() -> u64 {
 //
 
 #[derive(Debug, Clone)]
-pub struct EventPublish<A: Encodable, K: Encodable> {
+pub struct EventPublish {
     pub message_type: MessageType,
     pub id: u64,
     pub options: Options,
     pub topic: String,
-    pub args: Vec<WampEncodable<A>>,
-    pub kwargs: K,
+    pub args: Vec<WampType>,
+    pub kwargs: WampType,
 }
 
-impl<A: Encodable, K: Encodable> Encodable for EventPublish<A, K> { 
+impl Encodable for EventPublish { 
     fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
         // [self.message_type, self.id, self.options, self.topic, self.args, self.kwargs];
         s.emit_seq(6, |s| {
@@ -140,10 +283,25 @@ impl<A: Encodable, K: Encodable> Encodable for EventPublish<A, K> {
 
 #[derive(Debug, Clone)]
 pub struct EventSubscribe {
-    pub message_type: MessageType,
-    pub id: u64,
-    pub options: Options,
-    pub topic: String,
+    message_type: MessageType,
+    id: u64,
+    options: Options,
+    topic: String,
+}
+
+impl EventSubscribe {
+    pub fn new(topic: String) -> Self {
+        EventSubscribe {
+            message_type: MessageType::SUBSCRIBE,
+            id: new_event_id(),
+            topic: topic,
+            options: Options::Empty
+        }
+    }
+
+    pub fn get_id(&self) -> u64 {
+        self.id
+    }
 }
 
 
@@ -161,17 +319,16 @@ impl Encodable for EventSubscribe {
 }
 
 #[derive(Debug, Clone)]
-pub struct EventSubscribed {
-    pub message_type: MessageType,
-    pub id: u64,
-    pub topic: u64,
-}
-
-#[derive(Debug, Clone)]
 pub struct EventJoin {
     pub message_type: MessageType,
     pub realm: String,
     pub details: Details,
+}
+
+impl EventJoin {
+    pub fn new (realm: String) {
+        unimplemented!();
+    }
 }
 
 impl Encodable for EventJoin {
@@ -186,42 +343,83 @@ impl Encodable for EventJoin {
     }
 }
 
-macro_rules! wamp_encodable {
+macro_rules! wamp_type {
     ($($t:ident),+) => {
         /// All types that can be sent to/from a WAMP Router
         /// Used to publish non-hetereogenous positional arguments
-        #[derive(Debug, Clone)]
-        pub enum WampEncodable<T> {
+        #[allow(dead_code, non_camel_case_types)]
+        #[derive(Debug, Clone, PartialEq)]
+        pub enum WampType {
             $($t($t),)* 
-                /// Used to send a custom user-defined `Encodable` type.
-                Generic(T), 
+                Vec(Vec<WampType>),
+                Map(HashMap<String, WampType>),
+                /// Represents an unparsed variant
+                Raw(String),
                 /// Used to send an empty struct or keymap value "{}"
                 None, 
-
         }
 
-        impl<T: Encodable> Encodable for WampEncodable<T> {
+        impl Encodable for WampType {
             fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
                 match self {
-                    $(&WampEncodable::$t(ref value) => value.encode(s),)+
-                        &WampEncodable::Generic(ref value) => value.encode(s),
-                        &WampEncodable::None => s.emit_map(0, |s| Ok(())),
+                    $(&WampType::$t(ref value) => value.encode(s),)+
+                        &WampType::Vec(ref value) => value.encode(s),
+                        &WampType::Map(ref value) => value.encode(s),
+                        &WampType::Raw(ref value) => value.encode(s),
+                        &WampType::None => s.emit_map(0, |s| Ok(())),
                 }
             }
         }
 
-        impl<T: Encodable> WampEncodable<T> { }
+        // impl Decodable for WampType {
+        //     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
+        //         unimplemented!();
+        //     }
+        // }
+        
         // Other clients can have this simplifier type alias
         // type WampEncodable = WampEncodable<()>;
     }
 }
 
 // TODO: add types per request
-wamp_encodable!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32, f64, bool, char);
+wamp_type!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32, f64, bool, char);
 
 #[test]
 fn message_enum_value() {
     assert!(MessageType::HELLO as u32 == 1);
     assert!(MessageType::SUBSCRIBE as u32 == 32);
-    assert!((1 as u32) as MessageType == MessageType::HELLO);
+    //assert!(WampEvent::Subscribed {
+    //    message_type: MessageType::SUBSCRIBED, 
+    //    event_id: 42,
+    //    topic_id: 123456,
+    //} == json::decode("[33,42,123456]").unwrap());
+}
+
+#[test]
+fn message_payload_braces() {
+    let simple_brace = "[hello, world]"; 
+    assert!(Payload::capture_braces(simple_brace, ('[', ']')) == Some((0, simple_brace.len()-1)));
+    assert!(Payload::capture_braces("[[hello], [test, [thing]]], [other, [stuff]]", ('[',']')) 
+                                    == Some((0, 25))); 
+}
+
+#[test]
+fn message_extract_payload() {
+    let sample_message_nokwargs = "[36,1232131,64713717171,{},[42, \"yup\"]]";
+    let sample_payload = Payload::from_str(sample_message_nokwargs);
+    let (number, yup) : (u32, String) = sample_payload.unwrap().decode_args().unwrap();
+    assert!(number == 42);
+    assert!(yup == "yup".to_string());
+
+    let message_kwargs_only = "[42, 12415261, 16171, {},[],{\"field\": 42, \"binary\": false, \"word\": \"hello world\"}]";
+    #[derive(PartialEq, RustcDecodable)]
+    struct TestStruct {
+        field: u32,
+        binary: bool,
+        word: String,
+    }
+    let payload2 = Payload::from_str(message_kwargs_only);
+    let test_struct: TestStruct= payload2.unwrap().decode_kwargs().unwrap();
+    assert!(test_struct == TestStruct{field: 42, binary: false, word: "hello world".to_string()});
 }
