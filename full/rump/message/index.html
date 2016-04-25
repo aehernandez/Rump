@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `message` mod in crate `rump`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, message">
+
+    <title>rump::message - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>rump</a></p><script>window.sidebarCurrent = {name: 'message', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>rump</a>::<wbr><a class='mod' href=''>message</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-680' class='srclink' href='../../src/rump/message.rs.html#1-426' title='goto source code'>[src]</a></span></h1>
+<h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>extern crate rustc_serialize;</code></td></tr><tr><td><code>extern crate rand;</code></td></tr><tr><td><code>use std::prelude::<a class='mod' href='https://doc.rust-lang.org/nightly/std/prelude/v1/index.html' title='std::prelude::v1'>v1</a>::*;</code></td></tr><tr><td><code>use rand::<a class='trait' href='https://doc.rust-lang.org/rand/rand/trait.Rng.html' title='rand::Rng'>Rng</a>;</code></td></tr><tr><td><code>use rustc_serialize::{<a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encoder.html' title='rustc_serialize::serialize::Encoder'>Encoder</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Decodable.html' title='rustc_serialize::serialize::Decodable'>Decodable</a>, <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Decoder.html' title='rustc_serialize::serialize::Decoder'>Decoder</a>};</code></td></tr><tr><td><code>use options::{<a class='enum' href='../../rump/options/enum.Options.html' title='rump::options::Options'>Options</a>, <a class='struct' href='../../rump/options/struct.Details.html' title='rump::options::Details'>Details</a>};</code></td></tr><tr><td><code>use transport::<a class='struct' href='../../rump/transport/struct.Serializer.html' title='rump::transport::Serializer'>Serializer</a>;</code></td></tr><tr><td><code>use std::<a class='mod' href='https://doc.rust-lang.org/nightly/core/result/index.html' title='core::result'>result</a>;</code></td></tr><tr><td><code>use std::collections::<a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>;</code></td></tr><tr><td><code>use <a class='enum' href='../../rump/enum.WampError.html' title='rump::WampError'>WampError</a>;</code></td></tr><tr><td><code>use <a class='type' href='../../rump/type.WampResult.html' title='rump::WampResult'>WampResult</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.EventJoin.html'
+                               title='rump::message::EventJoin'>EventJoin</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.EventPublish.html'
+                               title='rump::message::EventPublish'>EventPublish</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.EventSubscribe.html'
+                               title='rump::message::EventSubscribe'>EventSubscribe</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.Payload.html'
+                               title='rump::message::Payload'>Payload</a></td>
+                        <td class='docblock short'>
+                             <p>A struct representing the payload that&#39;s received from a WAMP event.</p>
+
+                        </td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.MessageType.html'
+                               title='rump::message::MessageType'>MessageType</a></td>
+                        <td class='docblock short'>
+                             <p>All WAMP events and message types and their numeric counterparts</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.WampEvent.html'
+                               title='rump::message::WampEvent'>WampEvent</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.WampType.html'
+                               title='rump::message::WampType'>WampType</a></td>
+                        <td class='docblock short'>
+                             <p>All types that can be sent to/from a WAMP Router
+Used to publish hetereogenous arguments</p>
+
+                        </td>
+                    </tr>
+                </table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.new_event_id.html'
+                               title='rump::message::new_event_id'>new_event_id</a></td>
+                        <td class='docblock short'>
+                             <p>Generates a new event_id to track messages sent to and from the WAMP Router</p>
+
+                        </td>
+                    </tr>
+                </table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "rump";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

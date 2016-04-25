@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Options","Represents different Options that can be sent wth a WAMP event"]],"struct":[["Callee",""],["CalleeFeatures",""],["Caller",""],["CallerFeatures",""],["Details","Represents advanced features this WAMP Client implements"],["Publisher",""],["PublisherFeatures",""],["Roles",""],["Subscriber",""],["SubscriberFeatures",""]]});
