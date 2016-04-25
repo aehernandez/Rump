@@ -2,7 +2,7 @@ extern crate rustc_serialize;
 extern crate websocket;
 
 use transport::{WampSender, WampConnector, WebSocket, Serializer};
-use message::{WampType, WampEvent, MessageType, EventPublish, EventJoin, Payload, EventSubscribe, new_event_id};
+use message::{WampEvent, MessageType, EventPublish, EventJoin, Payload, EventSubscribe, new_event_id};
 use options::{Options, Details};
 
 use rustc_serialize::{Encodable, Decodable};
@@ -14,8 +14,6 @@ use std::collections::HashMap;
 
 use super::{WampResult};
 
-use std::thread::sleep;
-use std::time::Duration;
 use std::str::from_utf8;
 
 use std::borrow::Borrow;
@@ -27,7 +25,11 @@ use std::borrow::Borrow;
 /// To obtain a Session from a client with default settings perform the following:
 ///
 /// ```
-/// let session = Client::new(ADDR_OF_ROUTER, REALM_NAME).connect().unwrap();
+/// # extern crate rump;
+/// # use rump::client::Client;
+/// # fn main() {
+/// let session = Client::new("ws://router_address:port/ws", "realm_name").connect().unwrap();
+/// # }
 /// ```
 ///
 pub struct Client {
@@ -50,7 +52,6 @@ pub struct Session <S: WampSender> {
     /// Two maps: Firstly a mapping from topic IDs to topic URIs
     /// Secondly, topic URIs to their callbacks 
     subscriptions: Arc<Mutex<(HashMap<u64, String>, HashMap<String, Vec<Box<Fn(&Payload) + Send>>>)>>,
-    state: SessionState, 
 }
 
 impl <S: WampSender> Session<S> {
@@ -62,36 +63,48 @@ impl <S: WampSender> Session<S> {
             details: Details::new(),
         };
 
-       self.sender.send(&join_msg)
+        self.sender.send(&join_msg)
     }
 
     /// Publish an event to the realm
-    /// You can publish 0 or more positional arguments that are of type `WampEncodable`
-    /// and/or a struct representings Key-Value pairs.
     ///
-    ///  # Examples
+    /// You can publish 0 or more positional arguments and/or a struct representings Key-Value pairs that have the [Encodable](https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html) trait (can be derived from RustcEncodable, see rustc_serialize [docs](https://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html#rust-type-based-encoding-and-decoding) for more details).
     ///
-    ///  To send an empty publish event 
+    /// # Examples
     ///
-    ///  ```
-    ///  session.publish::<(), WampEncodable<()>>("com.example.topic", Vec::new(), WampEncodable::None); 
-    ///  ```
+    /// To send an empty publish event...
     ///
-    ///  To send the positions arguments (42, "foo") and key word arguments:
-    ///  Note: Your custom type must have the
-    ///  [Encodable](https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html) trait.
+    /// ```rust
+    /// use rump::message::WampType;
+    /// # use self::Client;
+    /// # let mut session = Client::new("", "").connect().unwrap();
+    ///
+    /// session.publish("com.example.topic", Vec::new(), WampType::None); 
+    /// ```
+    ///
+    /// To send the example positions arguments (42, "foo") and key word arguments...
+    /// 
+    /// > This library includes a helper enum [WampType](../message/enum.WampType.html) that makes it easy to encode primitive positional arguments and keyword argument maps.
     ///
     /// ```
+    /// # use rump::client::Client;
+    /// use rump::message::WampType;
+    /// # let mut session = Client::new("", "").connect().unwrap();
+    ///
+    /// extern crate rustc_serialize;
+    /// use rustc_serialize::Encodable;
+    ///
     /// #[derive(RustcEncodable)]
     /// struct CustomKwargs {
-    ///     key1: String 
+    ///     key1: String,
     ///     key2: u32
     /// }
     ///
-    /// session.publish::<(), CustomKwargs>("com.example.topic", vec![WampEncodable::i32(42), WampEncodable::String("foo".to_string())], CustomKwargs {key1: "hello".to_string(), key2: 19});
+    /// session.publish("com.example.topic", vec![WampType::i32(42), WampType::String("foo".to_string())], CustomKwargs {key1: "hello".to_string(), key2: 19});
     /// ```
     ///
-    pub fn publish(&self, topic: &str, args: Vec<WampType>, kwargs: WampType) {
+    pub fn publish<A, K>(&self, topic: &str, args: Vec<A>, kwargs: K) 
+    where A: Encodable, K: Encodable {
         let msg = EventPublish {
             message_type: MessageType::PUBLISH,
             id: new_event_id(),
@@ -106,7 +119,6 @@ impl <S: WampSender> Session<S> {
 
     pub fn subscribe<F>(&self, topic: &str, callback: F) 
         where F: 'static + Send + Fn(&Payload) {
-            //let mut subscriptions = self.subscriptions.lock().unwrap();
             let callback = Box::new(callback);
             let topic = topic.to_string();
             let msg = EventSubscribe::new(topic.clone()); 
@@ -115,21 +127,19 @@ impl <S: WampSender> Session<S> {
                 pending.insert(msg.get_id(), (topic.clone(), callback));
             }
             self.sender.send(&msg);
-    }
+        }
 }
 
 impl Client {
-    fn new(url: &str, realm: &str) -> Self {
+    pub fn new(url: &str, realm: &str) -> Self {
         Client {url: String::from(url), realm: String::from(realm)}
     }
 
-    fn connect(&self) -> WampResult<Session<WebSocket>> {
+    pub fn connect(&self) -> WampResult<Session<WebSocket>> {
         println!("starting...");
 
-        let mut state = SessionState::NotConnected;
         let serializer = Serializer::json();
         let msg_serializer = serializer.clone();
-        //let mut subscriptions = Arc::new(Mutex::new(HashMap::new()));
         let pending_subscriptions =  Arc::new(Mutex::new(HashMap::new())); 
         let subscriptions = Arc::new(Mutex::new((HashMap::new(), HashMap::new())));
 
@@ -157,10 +167,10 @@ impl Client {
                         WampEvent::Event {topic_id, ..} => {
                             let cb_payload =  Payload::from_str(payload).unwrap();
                             let (ref topic_map, ref callback_map) = *msg_subscriptions.lock().unwrap();
-                           let topic_name = topic_map.get(&topic_id).unwrap();
-                           for callback in callback_map.get(topic_name).unwrap() {
-                               callback(&cb_payload);
-                           }
+                            let topic_name = topic_map.get(&topic_id).unwrap();
+                            for callback in callback_map.get(topic_name).unwrap() {
+                                callback(&cb_payload);
+                            }
                         },
                     }
                 }
@@ -172,9 +182,8 @@ impl Client {
                                                 serializer,
                                                 on_message));
 
-        let mut session = Session {
+        let session = Session {
             sender: transport, 
-            state: state, 
             pending_subscriptions: pending_subscriptions,
             subscriptions: subscriptions,
         };
@@ -183,26 +192,48 @@ impl Client {
     }
 }
 
-#[test]
-fn client_naive_connect() {
-    let mut session = Client::new("ws://localhost:8080/ws", "realm1").connect().unwrap();
-    //session.publish("com.myapp.topic1", vec![WampType::i32(5), 
-    //                                         WampType::String("hello".to_string())],
-    //                                         WampType::None);
-    sleep(Duration::new(1, 0));
+#[cfg(test)]
+mod test {
+    use std::thread::sleep;
+    use std::time::Duration;
+    use client::Client;
+    use message::WampType;
 
-    #[derive(Debug, RustcDecodable)]
-    struct TestStruct {
-        counter: i64,
-        word: String,
+#[test]
+#[ignore]
+    fn client_loop_publish() {
+        println!("Starting publish session...");
+        let mut session = Client::new("ws://localhost:8080/ws", "realm1").connect().unwrap();
+        loop {
+            let mut counter = 0;
+            session.publish("com.myapp.topic1", vec![WampType::i32(counter), 
+                            WampType::String("hello".to_string())],
+                            WampType::None);
+            counter = counter + 1;
+        }
     }
 
-    session.subscribe("com.myapp.topic1", |payload| {
-        let (counter, from) : (i64, String) = payload.decode_args().unwrap();   
-        let test_struct : TestStruct = payload.decode_kwargs().unwrap();
-        println!("got count {:?} from {:?}", counter, from);
-        println!("and some kwargs {:?}", test_struct);
-    });
+#[test]
+#[ignore]
+    fn client_loop_subscribe() {
+        println!("Starting subscribe session...");
+        let mut session = Client::new("ws://localhost:8080/ws", "realm1").connect().unwrap();
 
-    loop {}
+        #[derive(Debug, RustcDecodable)]
+        struct TestStruct {
+            counter: i64,
+            word: String,
+        }
+
+        sleep(Duration::new(1, 0));
+
+        session.subscribe("com.myapp.topic1", |payload| {
+            let (counter, from) : (i64, String) = payload.decode_args().unwrap();   
+            let test_struct : TestStruct = payload.decode_kwargs().unwrap();
+            println!("got count {:?} from {:?}", counter, from);
+            println!("and some kwargs {:?}", test_struct);
+        });
+
+        loop {}
+    }
 }

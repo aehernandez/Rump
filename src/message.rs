@@ -2,13 +2,14 @@ extern crate rustc_serialize;
 extern crate rand;
 
 use rand::Rng;
-use rustc_serialize::{json, Encodable, Encoder, Decodable, Decoder};
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 use options::{Options, Details};
 use transport::Serializer;
+
 use std::result;
 use std::collections::HashMap;
-use std::any::Any;
+
 use WampError;
 use WampResult;
 
@@ -155,6 +156,7 @@ impl Decodable for WampEvent {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Payload {
     args: String,
     kwargs: Option<String>,
@@ -220,18 +222,23 @@ impl Payload {
         Err(WampError::ProtocolError)
     }
 
+
+    #[allow(dead_code)]
     pub fn decode_args<T: Decodable>(&self) -> WampResult<T> {
         self.serializer.decode(&*self.args)
     }
 
+    #[allow(dead_code)]
     pub fn decode_kwargs<T: Decodable>(&self) -> WampResult<T> {
         self.serializer.decode(&**self.kwargs.as_ref().unwrap_or(&String::from(""))) 
     }
 
+    #[allow(dead_code)]
     pub fn has_args(&self) -> bool {
         self.args.len() > 0
     }
 
+    #[allow(dead_code)]
     pub fn has_kwargs(&self) -> bool {
         self.kwargs.is_some()
     }
@@ -246,7 +253,6 @@ impl Encodable for MessageType {
 
 /// Generates a new event_id to track messages sent to and from the WAMP Router
 pub fn new_event_id() -> u64 {
-    // TODO: Randomely generate this...
     rand::thread_rng().next_u32() as u64
 }
 
@@ -257,16 +263,16 @@ pub fn new_event_id() -> u64 {
 //
 
 #[derive(Debug, Clone)]
-pub struct EventPublish {
+pub struct EventPublish<A: Encodable, K: Encodable> {
     pub message_type: MessageType,
     pub id: u64,
     pub options: Options,
     pub topic: String,
-    pub args: Vec<WampType>,
-    pub kwargs: WampType,
+    pub args: Vec<A>,
+    pub kwargs: K,
 }
 
-impl Encodable for EventPublish { 
+impl<A: Encodable, K: Encodable> Encodable for EventPublish<A, K> { 
     fn encode<S: Encoder>(&self, s: &mut S) -> result::Result<(), S::Error> {
         // [self.message_type, self.id, self.options, self.topic, self.args, self.kwargs];
         s.emit_seq(6, |s| {
@@ -346,15 +352,13 @@ impl Encodable for EventJoin {
 macro_rules! wamp_type {
     ($($t:ident),+) => {
         /// All types that can be sent to/from a WAMP Router
-        /// Used to publish non-hetereogenous positional arguments
+        /// Used to publish hetereogenous arguments
         #[allow(dead_code, non_camel_case_types)]
         #[derive(Debug, Clone, PartialEq)]
         pub enum WampType {
             $($t($t),)* 
                 Vec(Vec<WampType>),
                 Map(HashMap<String, WampType>),
-                /// Represents an unparsed variant
-                Raw(String),
                 /// Used to send an empty struct or keymap value "{}"
                 None, 
         }
@@ -365,8 +369,7 @@ macro_rules! wamp_type {
                     $(&WampType::$t(ref value) => value.encode(s),)+
                         &WampType::Vec(ref value) => value.encode(s),
                         &WampType::Map(ref value) => value.encode(s),
-                        &WampType::Raw(ref value) => value.encode(s),
-                        &WampType::None => s.emit_map(0, |s| Ok(())),
+                        &WampType::None => s.emit_map(0, |_| Ok(())),
                 }
             }
         }
@@ -389,11 +392,6 @@ wamp_type!(usize, u8, u16, u32, u64, isize, i8, i16, i32, i64, String, f32, f64,
 fn message_enum_value() {
     assert!(MessageType::HELLO as u32 == 1);
     assert!(MessageType::SUBSCRIBE as u32 == 32);
-    //assert!(WampEvent::Subscribed {
-    //    message_type: MessageType::SUBSCRIBED, 
-    //    event_id: 42,
-    //    topic_id: 123456,
-    //} == json::decode("[33,42,123456]").unwrap());
 }
 
 #[test]

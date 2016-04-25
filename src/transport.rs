@@ -8,7 +8,7 @@ use websocket::header::{WebSocketProtocol};
 use websocket::client::request::Url;
 use websocket::{message, Message, Sender, Receiver};
 
-use rustc_serialize::{Encodable, Encoder, Decodable};
+use rustc_serialize::{Encodable, Decodable};
 use rustc_serialize::json;
 
 use super::WampResult;
@@ -88,7 +88,7 @@ impl WampConnector for WebSocket {
     //TODO: 'static lifetime for this function, is this valid?
     fn connect<F>(url: String, serializer: Serializer, on_message: F) -> WampResult<Self> 
         where F:'static + Fn(Message) + Send {
-        let url = try!(Url::parse(&*url).map_err(|e| WampError::InvalidURL));
+        let url = try!(Url::parse(&*url).map_err(|_| WampError::InvalidURL));
         let mut request = try!(websocket::Client::connect(url));
         let protocol_name = "wamp.2.".to_string() + &*serializer.id;
         let protocol = WebSocketProtocol(vec![protocol_name]);

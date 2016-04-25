@@ -1,5 +1,4 @@
-use rustc_serialize::{json, Encodable, Encoder};
-use message::WampType;
+use rustc_serialize::{Encodable, Encoder};
 
 /// Represents different Options that can be sent wth a WAMP event 
 #[derive(RustcDecodable, Debug, Clone, PartialEq)]
@@ -11,7 +10,7 @@ pub enum Options {
 impl Encodable for Options {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match self {
-           &Options::Empty => s.emit_map(0, |s| Ok(())) 
+           &Options::Empty => s.emit_map(0, |_| Ok(())) 
         }
     }
 }
