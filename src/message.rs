@@ -157,6 +157,7 @@ impl Decodable for WampEvent {
 
 #[derive(Debug)]
 #[allow(dead_code)]
+/// A struct representing the payload that's received from a WAMP event.
 pub struct Payload {
     args: String,
     kwargs: Option<String>,
@@ -201,7 +202,7 @@ impl Payload {
         }
     }
 
-    /// Extract args and kwargs from a Wamp Message that is known to have a payload
+    /// Parse args and kwargs from a WAMP Message that is known to have a payload
     pub fn from_str(raw: &str) -> WampResult<Payload> {
         if let Some((_, end)) = Self::capture_braces(raw, ('{', '}')) {
             let (_, next) = raw.split_at(end + 1);
@@ -224,11 +225,13 @@ impl Payload {
 
 
     #[allow(dead_code)]
+    /// Extract positional arguments from the payload.
     pub fn decode_args<T: Decodable>(&self) -> WampResult<T> {
         self.serializer.decode(&*self.args)
     }
 
     #[allow(dead_code)]
+    /// Extract keyword arguments from the payload.
     pub fn decode_kwargs<T: Decodable>(&self) -> WampResult<T> {
         self.serializer.decode(&**self.kwargs.as_ref().unwrap_or(&String::from(""))) 
     }
