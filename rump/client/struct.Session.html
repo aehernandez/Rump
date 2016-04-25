@@ -46,43 +46,44 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-28' class='srclink' href='../../src/rump/client.rs.html#42-47' title='goto source code'>[src]</a></span></h1>
-<pre class='rust struct'>pub struct Session&lt;S: <a class='trait' href='../../rump/transport/trait.WampSender.html' title='rump::transport::WampSender'>WampSender</a>&gt; {
-    sender: S,
-    subscriptions: <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html' title='alloc::arc::Arc'>Arc</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/sync/mutex/struct.Mutex.html' title='std::sync::mutex::Mutex'>Mutex</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(<a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;, <a class='struct' href='https://doc.rust-lang.org/nightly/std/collections/hash/map/struct.HashMap.html' title='std::collections::hash::map::HashMap'>HashMap</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>, <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;<a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(<a class='struct' href='../../rump/message/struct.EventPublish.html' title='rump::message::EventPublish'>EventPublish</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;) + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Send.html' title='core::marker::Send'>Send</a>&gt;&gt;&gt;)</a>&gt;&gt;,
-    state: <a class='enum' href='../../rump/client/enum.SessionState.html' title='rump::client::SessionState'>SessionState</a>,
+        </span><a id='src-28' class='srclink' href='../../src/rump/client.rs.html#47-55' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Session&lt;S: WampSender&gt; {
+    // some fields omitted
 }</pre><div class='docblock'><p>A Session represents a valid WAMP Session with a Router.
 You can obtain a <code>Session</code> from a <code>Client</code></p>
-</div><h2 class='fields'>Fields</h2>
-<table><tr class='stab '>
-                                  <td id='structfield.sender'><code>sender</code></td><td><div class='docblock'><p>Outgoing socket connection to WAMP Router</p>
-</div></td></tr><tr class='stab '>
-                                  <td id='structfield.subscriptions'><code>subscriptions</code></td><td></td></tr><tr class='stab '>
-                                  <td id='structfield.state'><code>state</code></td><td></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;S: <a class='trait' href='../../rump/transport/trait.WampSender.html' title='rump::transport::WampSender'>WampSender</a>&gt; <a class='struct' href='../../rump/client/struct.Session.html' title='rump::client::Session'>Session</a>&lt;S&gt;</code></h3><div class='impl-items'><h4 id='method.join' class='method'><code>fn <a href='#method.join' class='fnname'>join</a>(&amp;self, realm: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>) -&gt; <a class='type' href='../../rump/type.WampResult.html' title='rump::WampResult'>WampResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;S: WampSender&gt; <a class='struct' href='../../rump/client/struct.Session.html' title='rump::client::Session'>Session</a>&lt;S&gt;</code></h3><div class='impl-items'><h4 id='method.join' class='method'><code>fn <a href='#method.join' class='fnname'>join</a>(&amp;self, realm: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>) -&gt; <a class='type' href='../../rump/type.WampResult.html' title='rump::WampResult'>WampResult</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></h4>
 <div class='docblock'><p>Connects to a WAMP Router in a realm without authentication</p>
-</div><h4 id='method.publish' class='method'><code>fn <a href='#method.publish' class='fnname'>publish</a>&lt;A, K&gt;(&amp;self, topic: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, args: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='enum' href='../../rump/message/enum.WampEncodable.html' title='rump::message::WampEncodable'>WampEncodable</a>&lt;A&gt;&gt;, kwargs: K) <span class='where'>where A: <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, K: <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a></span></code></h4>
-<div class='docblock'><p>Publish an event to the realm
-You can publish 0 or more positional arguments that are of type <code>WampEncodable</code>
-and/or a struct representings Key-Value pairs.</p>
+</div><h4 id='method.publish' class='method'><code>fn <a href='#method.publish' class='fnname'>publish</a>&lt;A, K&gt;(&amp;self, topic: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, args: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;A&gt;, kwargs: K) <span class='where'>where A: <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a>, K: <a class='trait' href='https://doc.rust-lang.org/rustc-serialize/rustc_serialize/serialize/trait.Encodable.html' title='rustc_serialize::serialize::Encodable'>Encodable</a></span></code></h4>
+<div class='docblock'><p>Publish an event to the realm</p>
 
-<p># Examples</p>
+<p>You can publish 0 or more positional arguments and/or a struct representings Key-Value pairs that have the <a href="https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html">Encodable</a> trait (can be derived from RustcEncodable, see rustc_serialize <a href="https://doc.rust-lang.org/rustc-serialize/rustc_serialize/json/index.html#rust-type-based-encoding-and-decoding">docs</a> for more details).</p>
 
-<p>To send an empty publish event </p>
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<p>To send an empty publish event...</p>
 <pre class='rust rust-example-rendered'>
- <span class='ident'>session</span>.<span class='ident'>publish</span>::<span class='op'>&lt;</span>(), <span class='ident'>WampEncodable</span><span class='op'>&lt;</span>()<span class='op'>&gt;&gt;</span>(<span class='string'>&quot;com.example.topic&quot;</span>, <span class='ident'>Vec</span>::<span class='ident'>new</span>(), <span class='ident'>WampEncodable</span>::<span class='prelude-val'>None</span>); </pre>
+<span class='kw'>use</span> <span class='ident'>rump</span>::<span class='ident'>message</span>::<span class='ident'>WampType</span>;
 
-<p>To send the positions arguments (42, &quot;foo&quot;) and key word arguments:
- Note: Your custom type must have the
- <a href="https://doc.rust-lang.org/rustc-serialize/rustc_serialize/trait.Encodable.html">Encodable</a> trait.</p>
+<span class='ident'>session</span>.<span class='ident'>publish</span>(<span class='string'>&quot;com.example.topic&quot;</span>, <span class='ident'>Vec</span>::<span class='ident'>new</span>(), <span class='ident'>WampType</span>::<span class='prelude-val'>None</span>); </pre>
+
+<p>To send the example positions arguments (42, &quot;foo&quot;) and key word arguments...</p>
+
+<blockquote>
+<p>This library includes a helper enum <a href="../message/enum.WampType.html">WampType</a> that makes it easy to encode primitive positional arguments and keyword argument maps.</p>
+</blockquote>
 <pre class='rust rust-example-rendered'>
+<span class='kw'>use</span> <span class='ident'>rump</span>::<span class='ident'>message</span>::<span class='ident'>WampType</span>;
+
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rustc_serialize</span>;
+<span class='kw'>use</span> <span class='ident'>rustc_serialize</span>::<span class='ident'>Encodable</span>;
+
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>RustcEncodable</span>)]</span>
 <span class='kw'>struct</span> <span class='ident'>CustomKwargs</span> {
-    <span class='ident'>key1</span>: <span class='ident'>String</span> 
+    <span class='ident'>key1</span>: <span class='ident'>String</span>,
     <span class='ident'>key2</span>: <span class='ident'>u32</span>
 }
 
-<span class='ident'>session</span>.<span class='ident'>publish</span>::<span class='op'>&lt;</span>(), <span class='ident'>CustomKwargs</span><span class='op'>&gt;</span>(<span class='string'>&quot;com.example.topic&quot;</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='ident'>WampEncodable</span>::<span class='ident'>i32</span>(<span class='number'>42</span>), <span class='ident'>WampEncodable</span>::<span class='ident'>String</span>(<span class='string'>&quot;foo&quot;</span>.<span class='ident'>to_string</span>())], <span class='ident'>CustomKwargs</span> {<span class='ident'>key1</span>: <span class='string'>&quot;hello&quot;</span>.<span class='ident'>to_string</span>(), <span class='ident'>key2</span>: <span class='number'>19</span>});</pre>
-</div><h4 id='method.subscribe' class='method'><code>fn <a href='#method.subscribe' class='fnname'>subscribe</a>&lt;F&gt;(&amp;self, topic: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, callback: F) <span class='where'>where F: 'static + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Send.html' title='core::marker::Send'>Send</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(<a class='struct' href='../../rump/message/struct.EventPublish.html' title='rump::message::EventPublish'>EventPublish</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;)</span></code></h4>
+<span class='ident'>session</span>.<span class='ident'>publish</span>(<span class='string'>&quot;com.example.topic&quot;</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='ident'>WampType</span>::<span class='ident'>i32</span>(<span class='number'>42</span>), <span class='ident'>WampType</span>::<span class='ident'>String</span>(<span class='string'>&quot;foo&quot;</span>.<span class='ident'>to_string</span>())], <span class='ident'>CustomKwargs</span> {<span class='ident'>key1</span>: <span class='string'>&quot;hello&quot;</span>.<span class='ident'>to_string</span>(), <span class='ident'>key2</span>: <span class='number'>19</span>});</pre>
+</div><h4 id='method.subscribe' class='method'><code>fn <a href='#method.subscribe' class='fnname'>subscribe</a>&lt;F&gt;(&amp;self, topic: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, callback: F) <span class='where'>where F: 'static + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Send.html' title='core::marker::Send'>Send</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(&amp;<a class='struct' href='../../rump/struct.Payload.html' title='rump::Payload'>Payload</a>)</span></code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 

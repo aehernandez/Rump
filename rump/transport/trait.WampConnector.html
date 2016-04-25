@@ -46,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-561' class='srclink' href='../../src/rump/transport.rs.html#58-60' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-625' class='srclink' href='../../src/rump/transport.rs.html#72-74' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait WampConnector {
     fn <a href='#tymethod.connect' class='fnname'>connect</a>&lt;F&gt;(url: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>, serializer: <a class='struct' href='../../rump/transport/struct.Serializer.html' title='rump::transport::Serializer'>Serializer</a>, on_message: F) -&gt; <a class='type' href='../../rump/type.WampResult.html' title='rump::WampResult'>WampResult</a>&lt;Self&gt; <span class='where'>where Self: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a>, F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Fn.html' title='core::ops::Fn'>Fn</a>(Message) + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Send.html' title='core::marker::Send'>Send</a></span>;
 }</pre><div class='docblock'><p>A WampConnector defines methods for a custom socket type to connect to another endpoint
