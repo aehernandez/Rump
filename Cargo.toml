@@ -1,6 +1,10 @@
 [package]
-name = "Rump"
+name = "rump"
 version = "0.1.0"
 authors = ["aehernandez <alainh@seas.upenn.edu>"]
 
 [dependencies]
+rustc-serialize = "0.3"
+websocket = "0.16.1"
+rand = "0.3"
+crossbeam = "0.2.5"
